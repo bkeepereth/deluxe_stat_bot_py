@@ -1,0 +1,13 @@
+<configuration>
+  <property><name>BIN_DIR</name><value>/bin</value></property> 
+  <property><name>ETC_DIR</name><value>/etc</value></property> 
+  <property><name>LOG_DIR</name><value>/log</value></property> 
+  <property><name>WORK_DIR</name><value>/work</value></property> 
+
+  <property><name>ES_KEY</name><value></value></property>
+  <property><name>CONSUMER_KEY</name><value></value></property>
+  <property><name>CONSUMER_SECRET</name><value></value></property>
+  <property><name>ACCESS_TOKEN</name><value></value></property>
+  <property><name>ACCESS_SECRET</name><value></value></property> 
+  <property><name>ALCHEMY_API_URL</name><value></value></property>  
+</configuration>
