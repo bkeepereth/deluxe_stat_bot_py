@@ -13,4 +13,8 @@ https://twitter.com/DeluxeStatBot
 
 ./deluxe_stat_bot.py -c [config_path] -i [cmd] -a [contract_addr] </br>
 
+cmd = 0, mint progress, supported=[bears,bees,hives]</br>
+cmd = 1, status, supported=[hives]</br>
+
 ## 
+
