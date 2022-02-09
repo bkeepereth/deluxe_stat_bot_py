@@ -1,6 +1,16 @@
 # deluxe_stat_bot_py
 
-https://twitter.com/DeluxeStatBot
+https://twitter.com/DeluxeStatBot </br>
+
+The OG design for the DeluxeStatBot, written in python. </br></br>
+
+Included features: </br>
+- Bears Deluxe Migration Progress </br>
+- Bees Deluxe 7D Mint Activity </br>
+- Bees Deluxe Historical Mint Activity </br>
+- Honey Hive Deluxe 7D Mint Activity </br>
+- Honey Hive Deluxe Historical Mint Activity </br>
+- Honey Hive Deluxe Current Hive Status </br>
 
 ## Configuration
 
@@ -16,5 +26,5 @@ https://twitter.com/DeluxeStatBot
 cmd = 0, mint progress, supported=[bears,bees,hives]</br>
 cmd = 1, status, supported=[hives]</br>
 
-## 
+## Output
 
