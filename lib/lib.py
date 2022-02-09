@@ -65,18 +65,6 @@ def parse_owners(log, df):
 def get_erc721_transfers(log,es_key,contract_addr):
     log.info(str(datetime.datetime.now())+"|get_erc721_transfers|starting")
 
-    url=('''https://api.etherscan.io/api?module=account&action=tokennfttx&contractaddress='''+contract_addr
-+'''&startblock=0'''
-+'''&endblock=99999999'''
-+'''&sort=asc'''
-+'''&apikey='''+es_key)
-
-    response=requests.request("GET", url)
-
-    if (response==None):
-        raise Exception("response object is invalid")
-
-    data=json.loads(response.text).get("result")
     cols=["BLOCK_NUM",
           "TIME_STAMP",
           "HASH",
@@ -96,55 +84,75 @@ def get_erc721_transfers(log,es_key,contract_addr):
           "INPUT",
           "CONFIRMS"]
 
-    log.info(str(datetime.datetime.now())+"|get_erc721_transfers|parsing response...")
-
     df=pd.DataFrame(columns=cols)
-    for i in range(len(data)):
-        block_num=str(data[i].get("blockNumber"))
-        time_stamp=str(data[i].get("timeStamp"))
-        hash=str(data[i].get("hash"))
-        nonce=str(data[i].get("nonce"))
-        block_hash=str(data[i].get("blockHash"))
-        contract_address=str(data[i].get("contractAddress"))
-        to_address=str(data[i].get("to"))
-        from_address=str(data[i].get("from"))
-        token_id=int(data[i].get("tokenID"))
-        token_name=str(data[i].get("tokenName"))
-        token_symbol=str(data[i].get("tokenSymbol"))
-        token_decimal=str(data[i].get("tokenDecimal"))
-        txn_index=str(data[i].get("transactionIndex"))
-        gas=str(data[i].get("gas"))
-        gas_price=str(data[i].get("gasPrice"))
-        gas_used=str(data[i].get("gasUsed"))
-        cum_gas_used=str(data[i].get("cumulativeGasUsed"))
-        input=str(data[i].get("input"))
-        confirms=str(data[i].get("confirmations"))
 
-        new_row={"BLOCK_NUM":block_num,
-                 "TIME_STAMP":time_stamp,
-                 "HASH":hash,
-                 "NONCE":nonce,
-                 "BLOCK_HASH":block_hash,
-                 "CONTRACT_ADDR":contract_address,
-                 "TO_ADDR":to_address,
-                 "FROM_ADDR":from_address,
-                 "TOKEN_ID":token_id,
-                 "TOKEN_NAME":token_name,
-                 "TOKEN_SYMBOL":token_symbol,
-                 "TXN_INDEX":txn_index,
-                 "GAS":gas,
-                 "GAS_PRICE":gas_price,
-                 "GAS_USED":gas_used,
-                 "CUM_GAS_USED":cum_gas_used,
-                 "INPUT":input,
-                 "CONFIRMS":confirms}
-        df=df.append(new_row,ignore_index=True)
+    flg=1
+    start_block=0
+    while(flg):
+        url=('''https://api.etherscan.io/api?module=account&action=tokennfttx&contractaddress='''+contract_addr
++'''&startblock='''+str(start_block)
++'''&sort=asc'''
++'''&apikey='''+es_key)
+
+        response=requests.request("GET", url)
+        if (response==None and start_block==0):
+            raise Exception("response object is invalid")
+
+        data=json.loads(response.text).get("result")
+
+        log.info(str(datetime.datetime.now())+"|get_erc721_transfers|parsing response...")
+
+        for i in range(len(data)):
+            block_num=str(data[i].get("blockNumber"))
+            time_stamp=str(data[i].get("timeStamp"))
+            hash=str(data[i].get("hash"))
+            nonce=str(data[i].get("nonce"))
+            block_hash=str(data[i].get("blockHash"))
+            contract_address=str(data[i].get("contractAddress"))
+            to_address=str(data[i].get("to"))
+            from_address=str(data[i].get("from"))
+            token_id=int(data[i].get("tokenID"))
+            token_name=str(data[i].get("tokenName"))
+            token_symbol=str(data[i].get("tokenSymbol"))
+            token_decimal=str(data[i].get("tokenDecimal"))
+            txn_index=str(data[i].get("transactionIndex"))
+            gas=str(data[i].get("gas"))
+            gas_price=str(data[i].get("gasPrice"))
+            gas_used=str(data[i].get("gasUsed"))
+            cum_gas_used=str(data[i].get("cumulativeGasUsed"))
+            input=str(data[i].get("input"))
+            confirms=str(data[i].get("confirmations"))
+
+            new_row={"BLOCK_NUM":block_num,
+                     "TIME_STAMP":time_stamp,
+                     "HASH":hash,
+                     "NONCE":nonce,
+                     "BLOCK_HASH":block_hash,
+                     "CONTRACT_ADDR":contract_address,
+                     "TO_ADDR":to_address,
+                     "FROM_ADDR":from_address,
+                     "TOKEN_ID":token_id,
+                     "TOKEN_NAME":token_name,
+                     "TOKEN_SYMBOL":token_symbol,
+                     "TXN_INDEX":txn_index,
+                     "GAS":gas,
+                     "GAS_PRICE":gas_price,
+                     "GAS_USED":gas_used,
+                     "CUM_GAS_USED":cum_gas_used,
+                     "INPUT":input,
+                     "CONFIRMS":confirms}
+            df=df.append(new_row,ignore_index=True)
+
+        if (start_block==df.iloc[-1]["BLOCK_NUM"]):
+            flg=0
+        else:
+            start_block=df.iloc[-1]["BLOCK_NUM"]
 
     log.info(str(datetime.datetime.now())+"|get_erc721_transfers|completed")
     return df
 
 
-def mint_act(log, df, file_name, flg):
+def mint_act(log, df):
     log.info(str(datetime.datetime.now())+"|mint_act|starting")
 
     mint_df=df[df["FROM_ADDR"]=="0x0000000000000000000000000000000000000000"].copy()
@@ -157,17 +165,6 @@ def mint_act(log, df, file_name, flg):
     mint_df.drop(columns=["TIME_STAMP","FROM_ADDR","TOKEN_ID","DT"],inplace=True)
 
     mint_df=mint_df.groupby(["DATE"]).sum()
-
-    if flg:
-        fig=px.bar(mint_df,
-               x=mint_df.index.values,
-               y=mint_df.MINT.values,
-               text=mint_df.MINT.values,
-               labels={"x":"Date","y":"Mint Activity"})
-        fig.layout.template='plotly_dark'
-        fig.update_layout(showlegend=False)
-        pio.write_image(fig,file_name,width=1000,height=750)
-        #fig.show()
 
     log.info(str(datetime.datetime.now())+"|mint_act|completed")
     return mint_df
@@ -187,12 +184,17 @@ def get_bee_supply(log, alchemy_url, contract_addr, abi_file):
     return (current_supply, max_supply, cent)
 
 
-def bee_mint_act(log, df, config, contract_addr):
+def bee_mint_act(log, df, config, contract_addr, hist_flg):
     log.info(str(datetime.datetime.now())+"|bee_mint_act|starting")
 
-    file_path=config.get("WORK_DIR")+"/"+(str(datetime.datetime.now())[:-7]).replace(" ","_")+"_BD_mint_act.png"
-    mint_df=mint_act(log,df,file_path,1)
+    mint_df=mint_act(log,df)
     today_mint_cnt=mint_df.iloc[-1,0]
+
+    if not hist_flg:
+        mint_df=mint_df.iloc[-7:]
+        title='''- '''+str(df.iloc[0]["TOKEN_NAME"])+''' 7D Mint Activity -'''
+    else:
+        title='''- '''+str(df.iloc[0]["TOKEN_NAME"])+''' Historical Mint Activity -'''
 
     abi_file=open(config.get("ETC_DIR")+"/BeesDeluxeAbi.json","r")
     abi=json.load(abi_file)
@@ -206,15 +208,33 @@ def bee_mint_act(log, df, config, contract_addr):
     if (cent=="" or cent==None):
         raise exception("cent is invalid, value="+str(cent))
 
-    output=('''- '''+str(df.iloc[0]["TOKEN_NAME"])+''' Mint Activity -
+    output=(title+'''
 Progress : '''+str(cent)+'''%
 Minted Today : '''+str(today_mint_cnt)+'''
 Supply : '''+str(current_supply)+'''/'''+str(max_supply))
+
+    file_path=config.get("WORK_DIR")+"/"+(str(datetime.datetime.now())[:-7]).replace(" ","_")+"_BD_mint_act.png"
+    fig=px.bar(mint_df,
+            x=mint_df.index.values,
+            y=mint_df.MINT.values,
+            text=mint_df.MINT.values,
+            labels={"x":"Date","y":"Mint Activity"})
+    fig.layout.template='plotly_dark'
+    fig.update_layout(showlegend=False)
+    pio.write_image(fig,file_path,width=1000,height=750)
+    #fig.show()
 
     oauth=OAuth1Session(config.get("CONSUMER_KEY"),
                      client_secret=config.get("CONSUMER_SECRET"),
                      resource_owner_key=config.get("ACCESS_TOKEN"),
                      resource_owner_secret=config.get("ACCESS_SECRET"))
+
+    media_tweet(log,oauth,file_path,output)
+
+    log.info(str(datetime.datetime.now())+"|bee_mint_act|completed")
+
+def media_tweet(log, oauth, file_path, status):
+    log.info(str(datetime.datetime.now())+"|media_tweet|starting")
 
     url="https://upload.twitter.com/1.1/media/upload.json"
 
@@ -228,65 +248,63 @@ Supply : '''+str(current_supply)+'''/'''+str(max_supply))
         ids=[dta["media_id"]]
 
         post_url="https://api.twitter.com/1.1/statuses/update.json"
-        payload={"status":output,"media_ids":ids}
+        payload={"status":status,"media_ids":ids}
 
         post_tweet=oauth.post(post_url,params=payload)
+
         if (post_tweet.status_code!=200):
-            log.info(str(datetime.datetime.now())+"|bee_mint_act|post_tweet response code: "+str(post_tweet.status_code))
-            raise exception(post_tweet.text)
+            log.info(str(datetime.datetime.now())+"|hive_mint_act|post_tweet response code: "+str(post_tweet.status_code))
+            raise Exception(post_tweet.text)
     else:
-        log.info(str(datetime.datetime.now())+"|bee_mint_act|response code: "+str(response.status_code))
-        raise exception(post_tweet.text)
+        log.info(str(datetime.datetime.now())+"|hive_mint_act|response code: "+str(response.status_code))
+        raise Exception(post_tweet.text)
+    
+    log.info(str(datetime.datetime.now())+"|media_tweet|completed")
 
-    log.info(str(datetime.datetime.now())+"|bee_mint_act|completed")
 
-
-def hive_mint_act(log, df, config):
+def hive_mint_act(log, df, config, hist_flg):
     log.info(str(datetime.datetime.now())+"|hive_mint_act|starting")
 
-    # assume no dups
-    file_path=config.get("WORK_DIR")+"/"+(str(datetime.datetime.now())[:-7]).replace(" ","_")+"_HHD_mint_act.png"
-
     MAX_SUPPLY=6900
-    mint_df=mint_act(log,df,file_path,1)
+    mint_df=mint_act(log,df)
     today_mint_cnt=mint_df.iloc[-1,0]
     total_mint=mint_df.sum()[0]
     cent=round((total_mint/MAX_SUPPLY)*100,2)
 
-    output=('''- '''+str(df.iloc[0]["TOKEN_NAME"])+''' Mint Actvity -
+    if not hist_flg:
+        mint_df=mint_df.iloc[-7:]
+        title='''- '''+str(df.iloc[0]["TOKEN_NAME"])+''' 7D Mint Activity -'''
+    else:
+        title='''- '''+str(df.iloc[0]["TOKEN_NAME"])+''' Historical Mint Activity -'''
+
+    # assume no dups
+    file_path=config.get("WORK_DIR")+"/"+(str(datetime.datetime.now())[:-7]).replace(" ","_")+"_HHD_mint_act.png"
+
+    output=(title+'''
 Progress : '''+str(cent)+'''%
 Minted Today : '''+str(today_mint_cnt)+'''
 Supply : '''+str(total_mint)+'''/'''+str(MAX_SUPPLY)+'''
 
 Remaining : '''+str(MAX_SUPPLY-total_mint))
 
+
+    file_path=config.get("WORK_DIR")+"/"+(str(datetime.datetime.now())[:-7]).replace(" ","_")+"_BD_mint_act.png"
+    fig=px.bar(mint_df,
+            x=mint_df.index.values,
+            y=mint_df.MINT.values,
+            text=mint_df.MINT.values,
+            labels={"x":"Date","y":"Mint Activity"})
+    fig.layout.template='plotly_dark'
+    fig.update_layout(showlegend=False)
+    pio.write_image(fig,file_path,width=1000,height=750)
+    #fig.show()
+
     oauth=OAuth1Session(config.get("CONSUMER_KEY"),
                      client_secret=config.get("CONSUMER_SECRET"),
                      resource_owner_key=config.get("ACCESS_TOKEN"),
                      resource_owner_secret=config.get("ACCESS_SECRET"))
 
-    url="https://upload.twitter.com/1.1/media/upload.json"
-
-    file_size=os.path.getsize(file_path)
-    file_data=open(file_path,"rb")
-    files={"media":file_data}
-
-    response=oauth.post(url,files=files)
-    if (response.ok):
-        dta=json.loads(response.text)
-        ids=[dta["media_id"]]
-
-        post_url="https://api.twitter.com/1.1/statuses/update.json"
-        payload={"status":output,"media_ids":ids}
-
-        post_tweet=oauth.post(post_url,params=payload)
-
-        if (post_tweet.status_code!=200):
-            log.info(str(datetime.datetime.now())+"|hive_mint_act|post_tweet response code: "+str(post_tweet.status_code))
-            raise exception(post_tweet.text)
-    else:
-        log.info(str(datetime.datetime.now())+"|hive_mint_act|response code: "+str(response.status_code))
-        raise exception(post_tweet.text)
+    media_tweet(log,oauth,file_path,output)
 
     log.info(str(datetime.datetime.now())+"|hive_mint_act|completed")
 
@@ -295,7 +313,7 @@ def bear_mint_act(log, df, config):
     log.info(str(datetime.datetime.now())+"|bear_mint_act|starting")
 
     MAX_SUPPLY=6900
-    mint_df=mint_act(log,df,"",0)
+    mint_df=mint_act(log,df)
     today_mint_cnt=mint_df.iloc[-1,0]
     total_mint=mint_df.sum()[0]
     cent=round((total_mint/MAX_SUPPLY)*100,2)
@@ -317,7 +335,7 @@ Remaining : '''+str(MAX_SUPPLY-total_mint))
 
     response=oauth.post(url,json=payload)
     if (response.status_code!=201):
-        log.info(str(datetime.datetime.now()+"|bear_mint_act|response code: "+str(response.status_code)))
+        log.info(str(datetime.datetime.now())+"|bear_mint_act|response code: "+str(response.status_code))
         raise exception("Tweet could not be posted...")
     else:
         log.info(str(datetime.datetime.now())+"|bear_mint_act|response code: "+str(response.status_code))
