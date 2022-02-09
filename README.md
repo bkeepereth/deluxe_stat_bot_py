@@ -10,7 +10,9 @@ Included features: </br>
 - Bees Deluxe Historical Mint Activity </br>
 - Honey Hive Deluxe 7D Mint Activity </br>
 - Honey Hive Deluxe Historical Mint Activity </br>
-- Honey Hive Deluxe Current Hive Status </br>
+- Honey Hive Deluxe Current Hive Status </br></br>
+
+**Discontinued. PROD will be refactored to rust. 
 
 ## Configuration
 
